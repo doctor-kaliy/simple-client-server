@@ -2,15 +2,26 @@ import exceptions.RequestFormatException
 import java.math.BigInteger
 
 class FibonacciHandler : RequestHandler {
-    private val fibonacci = mutableMapOf(0 to BigInteger("1"), 1 to BigInteger("1"))
+
+    companion object FibonacciHandler {
+        private val ONE: BigInteger = BigInteger.ONE
+    }
 
     private fun getFibonacci(n: Int): BigInteger {
-        var res = fibonacci[n]
-        if (res == null) {
-            res = getFibonacci(n - 1).add(getFibonacci(n - 2))
-            fibonacci[n] = res
+        return when (n) {
+            0 -> ONE
+            1 -> ONE
+            else -> {
+                var cur = ONE
+                var prev = ONE
+                for (i in 2..n) {
+                    val new = cur + prev
+                    prev = cur
+                    cur = new
+                }
+                cur
+            }
         }
-        return res!!
     }
 
     override fun handle(request: String): String {

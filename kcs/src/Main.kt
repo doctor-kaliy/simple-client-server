@@ -51,20 +51,37 @@ fun server(host: String, port: Int, requestHandler: RequestHandler) {
             clients.forEach { client ->
                 with(client) {
                     try {
-                        val request = input.readLine()
-                        if (request != null) {
-                            var response: String
-                            try {
-                                response = requestHandler.handle(request)
-                            } catch (e: RequestFormatException) {
-                                response = "Request format error occurred: ${e.message}"
-                                System.err.println(response)
-                            }
-                            try {
-                                output.println(response)
-                            } catch (e: IOException) {
-                                socket.use {}
-                                System.err.println("Error occurred while sending response: ${e.message}")
+                        while (input.ready()) {
+                            val buffer = CharArray(1024)
+                            val size = input.read(buffer)
+                            var i = 0
+                            while (i < size) {
+                                val k = when {
+                                    i + 1 < size && buffer[i] == '\r' && buffer[i + 1] == '\n' -> 2
+                                    buffer[i] == '\r' || buffer[i] == '\n' -> 1
+                                    else -> 0
+                                }
+                                if (k != 0) {
+                                    val request = client.builder.toString()
+                                    builder.clear()
+                                    var response: String
+                                    try {
+                                        response = requestHandler.handle(request)
+                                    } catch (e: RequestFormatException) {
+                                        response = "Request format error occurred: ${e.message}"
+                                        System.err.println(response)
+                                    }
+                                    try {
+                                        output.println(response)
+                                    } catch (e: IOException) {
+                                        socket.use {}
+                                        System.err.println("Error occurred while sending response: ${e.message}")
+                                    }
+                                    i += k
+                                } else {
+                                    builder.append(buffer[i])
+                                    i++
+                                }
                             }
                         }
                     } catch (e: IOException) {
